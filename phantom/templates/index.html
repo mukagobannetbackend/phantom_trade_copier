@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phantom Trade Copier</title>
+  <meta name="description" content="Private, simulation-first trade copier operations dashboard.">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-lockup">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span></div>
+        <div>
+          <div class="brand-name">PHANTOM</div>
+          <div class="brand-subtitle">TRADE COPIER</div>
+        </div>
+      </div>
+      <div class="rail-rule"></div>
+      <div class="workspace-label">WORKSPACE</div>
+      <nav class="nav-list" aria-label="Primary navigation">
+        <a class="nav-item active" href="#overview"><span class="nav-icon">⌁</span><span>Overview</span><span class="nav-count">01</span></a>
+        <a class="nav-item" href="#accounts"><span class="nav-icon">◌</span><span>Accounts</span><span class="nav-count">03</span></a>
+        <a class="nav-item" href="#activity"><span class="nav-icon">↗</span><span>Trade activity</span></a>
+        <a class="nav-item" href="#risk"><span class="nav-icon">△</span><span>Risk controls</span></a>
+        <a class="nav-item" href="#audit"><span class="nav-icon">≡</span><span>Audit trail</span></a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="system-card">
+          <div class="system-card-top"><span class="pulse-dot"></span><span>LOCAL NODE</span><span class="system-state">READY</span></div>
+          <div class="system-meta">127.0.0.1 · SQLite</div>
+          <div class="system-meta">Last reconcile <span id="last-reconcile">—</span></div>
+        </div>
+        <div class="sidebar-footer">v0.1.0 · Demo build</div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-context">
+          <div class="eyebrow">OPERATIONS / OVERVIEW</div>
+          <h1>Copy room</h1>
+        </div>
+        <div class="topbar-actions">
+          <div class="mode-stack">
+            <span class="mode-badge violet"><span class="badge-dot"></span>SIMULATION</span>
+            <span class="mode-badge amber">DEMO DATASET</span>
+          </div>
+          <button class="icon-button" id="refresh-button" title="Refresh dashboard" aria-label="Refresh dashboard">↻</button>
+          <a class="export-button" href="/api/v1/export/trades.csv"><span>↓</span> Export log</a>
+        </div>
+      </header>
+
+      <section class="notice-banner">
+        <div class="notice-symbol">i</div>
+        <div><strong>Simulation is isolated.</strong> This build cannot submit broker orders. Use the demo flow to validate policies, duplicate protection, and failure visibility before any future MT5 connector is considered.</div>
+        <span class="notice-dismiss" aria-label="Dismiss notice">×</span>
+      </section>
+
+      <section class="engine-row" id="overview">
+        <div class="engine-card">
+          <div class="engine-orbit"><div class="engine-core"><span class="pulse-dot"></span><span id="engine-state-label">PAUSED</span></div></div>
+          <div class="engine-copy">
+            <div class="eyebrow">COPY ENGINE</div>
+            <div class="engine-title">Master → follower route</div>
+            <p id="engine-message">Entries are paused. Safe monitoring continues.</p>
+            <div class="engine-meta"><span class="engine-meta-item"><span class="status-dot mint"></span>MT5 adapter ready</span><span class="engine-meta-item">Last tick <span class="mono" id="last-tick">420 ms</span></span></div>
+          </div>
+          <div class="engine-controls">
+            <button class="primary-button" data-engine-action="start">Start engine <span>↗</span></button>
+            <button class="secondary-button" data-engine-action="pause">Pause</button>
+            <button class="secondary-button" data-engine-action="stop">Stop</button>
+            <button class="danger-button" id="emergency-button">Emergency stop</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="metrics-grid" aria-label="Dashboard metrics">
+        <article class="metric-card"><div class="metric-label">FOLLOWER HEALTH <span class="metric-icon mint">◉</span></div><div class="metric-value"><span id="healthy-followers">—</span><span class="metric-denom" id="follower-total">/ —</span></div><div class="metric-foot mint-text">Connected & ready</div></article>
+        <article class="metric-card"><div class="metric-label">ACTIVE POSITIONS <span class="metric-icon violet">↗</span></div><div class="metric-value" id="active-positions">—</div><div class="metric-foot">Across monitored accounts</div></article>
+        <article class="metric-card"><div class="metric-label">COPY SUCCESS <span class="metric-icon mint">✓</span></div><div class="metric-value" id="copy-success">—</div><div class="metric-foot mint-text">Confirmed executions</div></article>
+        <article class="metric-card"><div class="metric-label">COPY BLOCKED <span class="metric-icon amber">!</span></div><div class="metric-value" id="copy-blocked">—</div><div class="metric-foot amber-text">Review required</div></article>
+        <article class="metric-card"><div class="metric-label">FLOATING P/L <span class="metric-icon violet">$</span></div><div class="metric-value" id="floating-pl">—</div><div class="metric-foot" id="sync-lag">Sync lag —</div></article>
+      </section>
+
+      <section class="section-block" id="accounts">
+        <div class="section-heading"><div><div class="eyebrow">CONNECTED ACCOUNTS</div><h2>Account topology</h2></div><button class="ghost-button" id="preflight-button">Run preflight <span>→</span></button></div>
+        <div class="account-grid" id="account-grid"></div>
+      </section>
+
+      <section class="content-grid" id="activity">
+        <div class="panel activity-panel">
+          <div class="panel-heading"><div><div class="eyebrow">COPY LEDGER</div><h2>Latest activity</h2></div><button class="text-button" id="demo-tick">Simulate event <span>↗</span></button></div>
+          <div class="table-wrap"><table><thead><tr><th>Source event</th><th>Route</th><th>Trade</th><th>Volume</th><th>Status</th><th>Time</th></tr></thead><tbody id="activity-table"></tbody></table></div>
+          <div class="panel-footer"><span id="activity-summary">—</span><a href="#audit">Open audit trail →</a></div>
+        </div>
+        <div class="panel risk-panel" id="risk">
+          <div class="panel-heading"><div><div class="eyebrow">RISK POSTURE</div><h2>Guardrails</h2></div><span class="status-pill mint-pill">ARMED</span></div>
+          <div class="risk-list">
+            <div class="risk-item"><div><strong>Daily loss limit</strong><span>Realized + floating</span></div><div class="risk-value"><b>2.0%</b><span class="track"><i style="width: 24%"></i></span></div></div>
+            <div class="risk-item"><div><strong>Equity drawdown</strong><span>From session baseline</span></div><div class="risk-value"><b>5.0%</b><span class="track"><i style="width: 9%"></i></span></div></div>
+            <div class="risk-item"><div><strong>Max slippage</strong><span>Platform deviation</span></div><div class="risk-value"><b>0.8 pts</b><span class="track"><i style="width: 38%"></i></span></div></div>
+            <div class="risk-item"><div><strong>Duplicate protection</strong><span>Stable source event IDs</span></div><div class="risk-value"><b class="mint-text">ON</b><span class="check-ring">✓</span></div></div>
+          </div>
+          <div class="risk-note"><span>△</span> Live mode remains unavailable until demo validation and broker-rule review are complete.</div>
+        </div>
+      </section>
+
+      <section class="content-grid lower-grid">
+        <div class="panel alert-panel">
+          <div class="panel-heading"><div><div class="eyebrow">ATTENTION QUEUE</div><h2>Alerts</h2></div><span class="count-badge" id="alert-count">0</span></div>
+          <div class="alert-list" id="alert-list"></div>
+        </div>
+        <div class="panel audit-panel" id="audit">
+          <div class="panel-heading"><div><div class="eyebrow">AUDIT TRAIL</div><h2>Operator activity</h2></div><button class="text-button" id="open-audit">View all <span>→</span></button></div>
+          <div class="audit-list" id="audit-list"></div>
+        </div>
+      </section>
+
+      <footer class="app-footer"><span>Phantom Trade Copier</span><span>Execution utility, not a strategy or profit guarantee.</span><span class="mono">UTC · local-only default</span></footer>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="confirm-modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-kicker">CONTROL REQUIRES CONFIRMATION</div>
+      <h2 id="modal-title">Activate emergency stop?</h2>
+      <p id="modal-copy">This immediately blocks queued and new submissions across all followers. Existing positions will not be liquidated.</p>
+      <div class="modal-actions"><button class="secondary-button" id="modal-cancel">Cancel</button><button class="danger-button" id="modal-confirm">Activate stop</button></div>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="policy-modal" hidden>
+    <div class="modal-card policy-modal-card" role="dialog" aria-modal="true" aria-labelledby="policy-title">
+      <div class="modal-kicker violet-kicker">FOLLOWER CONFIGURATION</div>
+      <h2 id="policy-title">Edit follower policy</h2>
+      <p>Changes are persisted locally and applied to the next simulated entry. They never submit a broker order in this build.</p>
+      <form id="policy-form">
+        <div class="policy-form-grid">
+          <label>Follower<select name="sizing_mode"><option value="multiplier">Master volume multiplier</option><option value="fixed">Fixed lot</option><option value="balance_ratio">Balance / equity proportional</option><option value="risk_pct">Risk percent</option></select></label>
+          <label>Multiplier<input name="multiplier" type="number" min="0" step="0.05"></label>
+          <label>Fixed lot<input name="fixed_lot" type="number" min="0" step="0.01"></label>
+          <label>Balance ratio<input name="balance_ratio" type="number" min="0" step="0.05"></label>
+          <label>Risk per trade %<input name="risk_pct" type="number" min="0" step="0.05"></label>
+          <label>Max lot<input name="max_lot" type="number" min="0" step="0.01"></label>
+          <label>Max risk %<input name="max_risk" type="number" min="0" step="0.05"></label>
+          <label>Max open positions<input name="max_open_positions" type="number" min="1" step="1"></label>
+          <label>Direction<select name="side_filter"><option value="BOTH">Buy + sell</option><option value="BUY_ONLY">Buy only</option><option value="SELL_ONLY">Sell only</option></select></label>
+          <label class="full-field">Allowed symbols<input name="allowed_symbols" type="text" placeholder="EURUSD,GBPUSD,XAUUSD"></label>
+        </div>
+        <div class="policy-toggles"><label><input name="sltp_sync" type="checkbox"> Sync SL / TP changes</label><label><input name="pending_order_copy" type="checkbox"> Copy pending orders</label><label><input name="copy_enabled" type="checkbox"> Copy enabled</label></div>
+        <div class="modal-actions"><button type="button" class="secondary-button" id="policy-cancel">Cancel</button><button type="submit" class="primary-button">Save policy</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

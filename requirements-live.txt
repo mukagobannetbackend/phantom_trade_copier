@@ -1,0 +1,2 @@
+# Install only on the validated Windows host with MT5 terminals installed.
+MetaTrader5

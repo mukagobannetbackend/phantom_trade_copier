@@ -1,0 +1,1 @@
+"""Phantom Trade Copier package."""
